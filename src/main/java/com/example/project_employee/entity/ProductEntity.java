@@ -4,46 +4,42 @@ import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.Builder;
+import org.hibernate.Hibernate;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "products")
 @Data
-@NoArgsConstructor
 @AllArgsConstructor
-@Builder
+@NoArgsConstructor
 public class ProductEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(unique = true, nullable = false, length = 200)
+    @Column(name = "name", unique = true)
     private String name;
 
-    @Column(columnDefinition = "TEXT")
+    @Column(name = "description")
     private String description;
 
-    @Column(nullable = false, precision = 10, scale = 2)
+    @Column(name = "price", precision = 19, scale = 2)
     private BigDecimal price;
 
-    @Column(name = "created_at", updatable = false)
-    private LocalDateTime createdAt;
+    @ManyToMany(mappedBy = "products")
+    private List<OrderEntity> orders = new ArrayList<>();
 
-    @Column(name = "updated_at")
-    private LocalDateTime updatedAt;
-
-    @PrePersist
-    protected void onCreate() {
-        createdAt = LocalDateTime.now();
-        updatedAt = LocalDateTime.now();
-    }
-
-    @PreUpdate
-    protected void onUpdate() {
-        updatedAt = LocalDateTime.now();
+    @PreRemove
+    private void checkOrdersBeforeDelete() {
+        if (!Hibernate.isInitialized(orders)) {
+            Hibernate.initialize(orders);
+        }
+        if (!orders.isEmpty()) {
+            throw new IllegalStateException("Cannot delete product referenced in order");
+        }
     }
 }

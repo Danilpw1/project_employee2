@@ -2,156 +2,103 @@ package com.example.project_employee.controller;
 
 import com.example.project_employee.dto.OrderRequestDto;
 import com.example.project_employee.dto.OrderResponseDto;
-import com.example.project_employee.entity.OrderEntity;
+import com.example.project_employee.dto.PageResponse;
+import com.example.project_employee.dto.ProductResponseDto;
+import com.example.project_employee.entity.ProductEntity;
+import com.example.project_employee.enums.OrderStatus;
 import com.example.project_employee.service.OrderService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
-import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
 import java.util.List;
 
-@RestController
-@RequestMapping("/api/orders")
+@Controller
 @RequiredArgsConstructor
+@Slf4j
+@Tag(name = "Orders", description = "API для управления заказами")
 public class OrderController {
-
     private final OrderService orderService;
 
-    @PostMapping
-    public ResponseEntity<OrderResponseDto> createOrder(@Valid @RequestBody OrderRequestDto requestDto) {
-        OrderResponseDto created = orderService.createOrder(requestDto);
-        return ResponseEntity.status(HttpStatus.CREATED).body(created);
+    @PostMapping("/orders")
+    @Operation(summary = "Создать новый заказ", description = "Создает новый заказ")
+    public ResponseEntity<OrderResponseDto> addOrder(@Valid @RequestBody OrderRequestDto requestDto) {
+        log.info("Получен запрос на создание нового заказа");
+        OrderResponseDto responseDto = orderService.addOrder(requestDto);
+        log.info("Заказ с ID: {} успешно создан", responseDto.getId());
+        return new ResponseEntity<>(responseDto, HttpStatus.CREATED);
     }
 
-    @GetMapping("/{id}")
-    public ResponseEntity<OrderResponseDto> getOrder(@PathVariable Long id) {
-        OrderResponseDto order = orderService.getOrderById(id);
-        return ResponseEntity.ok(order);
+    @PostMapping("/orders/{orderId}/products/{productId}")
+    @Operation(summary = "Добавить товар в заказ", description = "Позволяет добавить товар в заказ")
+    public ResponseEntity<OrderResponseDto> addProductToOrder(@PathVariable("orderId") Long orderId,
+                                                              @PathVariable("productId") long productId) {
+        log.info("Запрос на добавление продукта в заказ с ID: {}", orderId);
+        OrderResponseDto responseDto = orderService.addProductToOrder(orderId, productId);
+        log.info("Продукт с ID: {} успешно был добавлен в заказ с ID: {}", productId, orderId);
+        return new ResponseEntity<>(responseDto, HttpStatus.ACCEPTED);
     }
 
-    @PutMapping("/{id}")
-    public ResponseEntity<OrderResponseDto> updateOrder(
-            @PathVariable Long id,
-            @Valid @RequestBody OrderRequestDto requestDto) {
-        OrderResponseDto updated = orderService.updateOrder(id, requestDto);
-        return ResponseEntity.ok(updated);
+    @GetMapping("/orders")
+    @Operation(summary = "Получить все заказы", description = "Возвращает список всех заказов")
+    public ResponseEntity<PageResponse<OrderResponseDto>> getAllOrders(
+            @RequestParam(required = false) LocalDateTime createdDate,
+            @RequestParam(required = false, name = "orderStatus") OrderStatus orderStatus,
+            @RequestParam(required = false) Long productId,
+            @PageableDefault(page = 0, size = 10, sort = "createdDate")
+            Pageable pageable
+    ) {
+        log.info("Получение всех заказов");
+        PageResponse<OrderResponseDto> response = orderService.getAllOrders(
+                createdDate,
+                orderStatus,
+                productId,
+                pageable);
+        return ResponseEntity.ok(response);
     }
 
-    @PatchMapping("/{id}/status")
-    public ResponseEntity<OrderResponseDto> updateOrderStatus(
-            @PathVariable Long id,
-            @RequestParam OrderEntity.OrderStatus status) {
-        OrderResponseDto updated = orderService.updateOrderStatus(id, status);
-        return ResponseEntity.ok(updated);
+    @GetMapping("/orders/{id}")
+    @Operation(summary = "Получить заказ по его ID", description = "Позволяет получить информацию о заказе по его ID")
+    public ResponseEntity<OrderResponseDto> getOrderById(@PathVariable("id") Long id) {
+        log.info("Получение заказа по ID: {}", id);
+        return new ResponseEntity<>(orderService.getOrderById(id), HttpStatus.OK);
     }
 
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteOrder(@PathVariable Long id) {
-        orderService.deleteOrder(id);
-        return ResponseEntity.noContent().build();
+    @DeleteMapping("/orders/{id}")
+    @Operation(summary = "Удалить заказ по его ID", description = "Позволяет удалить заказ по его ID")
+    public ResponseEntity<Long> removeOrder(@PathVariable("id") Long id) {
+        log.warn("Запрос на удаление заказа с ID: {}", id);
+        Long removedOrder = orderService.removeOrder(id);
+        log.info("Заказ с ID: {} был успешно удален", id);
+        return ResponseEntity.ok(removedOrder);
     }
 
-    @GetMapping
-    public ResponseEntity<Page<OrderResponseDto>> getAllOrders(
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size,
-            @RequestParam(defaultValue = "createdAt") String sortBy,
-            @RequestParam(defaultValue = "desc") String direction) {
-
-        Sort sort = direction.equalsIgnoreCase("asc")
-                ? Sort.by(sortBy).ascending()
-                : Sort.by(sortBy).descending();
-
-        Pageable pageable = PageRequest.of(page, size, sort);
-        Page<OrderResponseDto> orders = orderService.getAllOrders(pageable);
-        return ResponseEntity.ok(orders);
+    @DeleteMapping("/orders/{orderId}/products/{productId}")
+    @Operation(summary = "Удалить товар в заказе", description = "Позволяет удалить товар в заказе по ID")
+    public ResponseEntity<List<ProductResponseDto>> removeProductInOrder(@PathVariable("orderId") Long orderId,
+                                                                         @PathVariable("productId") long productId) {
+        log.warn("Запрос на удаление продукта с ID: {} в заказе с ID: {}", productId, orderId);
+        List<ProductResponseDto> removedProduct = orderService.removeProductInOrder(orderId, productId);
+        log.info("Продукт с ID: {} был успешно удален из заказа с ID: {}", productId, orderId);
+        return ResponseEntity.ok(removedProduct);
     }
 
-    @GetMapping("/all")
-    public ResponseEntity<List<OrderResponseDto>> getAllOrdersWithoutPagination() {
-        List<OrderResponseDto> orders = orderService.getAllOrders();
-        return ResponseEntity.ok(orders);
-    }
-
-    @GetMapping("/filter")
-    public ResponseEntity<Page<OrderResponseDto>> getOrdersWithFilters(
-            @RequestParam(required = false) OrderEntity.OrderStatus status,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime startDate,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime endDate,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size,
-            @RequestParam(defaultValue = "createdAt") String sortBy,
-            @RequestParam(defaultValue = "desc") String direction) {
-
-        Sort sort = direction.equalsIgnoreCase("asc")
-                ? Sort.by(sortBy).ascending()
-                : Sort.by(sortBy).descending();
-
-        Pageable pageable = PageRequest.of(page, size, sort);
-
-        Page<OrderResponseDto> orders = orderService.getOrdersWithFilters(
-                status,
-                startDate,
-                endDate,
-                pageable
-        );
-
-        return ResponseEntity.ok(orders);
-    }
-
-    @GetMapping("/client/{clientId}")
-    public ResponseEntity<List<OrderResponseDto>> getOrdersByClientId(@PathVariable Long clientId) {
-        List<OrderResponseDto> orders = orderService.getOrdersByClientId(clientId);
-        return ResponseEntity.ok(orders);
-    }
-
-    @GetMapping("/client/{clientId}/filter")
-    public ResponseEntity<Page<OrderResponseDto>> getOrdersByClientIdWithFilters(
-            @PathVariable Long clientId,
-            @RequestParam(required = false) OrderEntity.OrderStatus status,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime startDate,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime endDate,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size,
-            @RequestParam(defaultValue = "createdAt") String sortBy,
-            @RequestParam(defaultValue = "desc") String direction) {
-
-        Sort sort = direction.equalsIgnoreCase("asc")
-                ? Sort.by(sortBy).ascending()
-                : Sort.by(sortBy).descending();
-
-        Pageable pageable = PageRequest.of(page, size, sort);
-
-        Page<OrderResponseDto> orders = orderService.getOrdersByClientIdWithFilters(
-                clientId,
-                status,
-                startDate,
-                endDate,
-                pageable
-        );
-
-        return ResponseEntity.ok(orders);
-    }
-
-    @GetMapping("/status/{status}")
-    public ResponseEntity<List<OrderResponseDto>> getOrdersByStatus(@PathVariable OrderEntity.OrderStatus status) {
-        List<OrderResponseDto> orders = orderService.getOrdersByStatus(status);
-        return ResponseEntity.ok(orders);
-    }
-
-    @GetMapping("/date-range")
-    public ResponseEntity<List<OrderResponseDto>> getOrdersByDateRange(
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime from,
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime to) {
-        List<OrderResponseDto> orders = orderService.getOrdersByDateRange(from, to);
-        return ResponseEntity.ok(orders);
+    @PatchMapping("/orders/{id}")
+    @Operation(summary = "Обноваить заказ по его ID", description = "Позволяет обновить информацию о заказе по его ID")
+    public ResponseEntity<OrderResponseDto> updateOrder(@PathVariable("id") Long id,
+                                                        @Valid @RequestBody OrderRequestDto requestDto) {
+        log.warn("Запрос на изменение данных заказа с ID: {}", id);
+        OrderResponseDto updatedOrder = orderService.updateOrder(id, requestDto);
+        log.info("Данные заказа с ID: {} успешно изменены", id);
+        return new ResponseEntity<>(updatedOrder, HttpStatus.OK);
     }
 }

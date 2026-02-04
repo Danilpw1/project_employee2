@@ -1,65 +1,33 @@
 package com.example.project_employee.entity;
 
+import com.example.project_employee.enums.EmployeeRole;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import lombok.Builder;
+import lombok.*;
 
-import java.math.BigDecimal;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
 
+@Data
 @Entity
 @Table(name = "employees")
-@Data
-@NoArgsConstructor
 @AllArgsConstructor
-@Builder
+@NoArgsConstructor
 public class EmployeeEntity {
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "first_name", nullable = false, length = 50)
+    @Column(name = "first_name")
     private String firstName;
 
-    @Column(name = "last_name", nullable = false, length = 50)
+    @Column(name = "last_name")
     private String lastName;
 
-    @Column(nullable = false, length = 100)
-    private String position;
-
-    @Column(nullable = false, precision = 10, scale = 2)
-    private BigDecimal salary;
-
-    @Column(nullable = false, length = 100)
-    private String department;
-
-    @Column(name = "hire_date", nullable = false)
-    private LocalDate hireDate;
-
-    @Column(unique = true, nullable = false, length = 100)
+    @Column(name = "email", unique = true)
     private String email;
 
-    @Column(nullable = false, length = 20)
-    private String phone;
+    @Column(name = "password")
+    private String password;
 
-    @Column(name = "created_at", updatable = false)
-    private LocalDateTime createdAt;
-
-    @Column(name = "updated_at")
-    private LocalDateTime updatedAt;
-
-    @PrePersist
-    protected void onCreate() {
-        createdAt = LocalDateTime.now();
-        updatedAt = LocalDateTime.now();
-    }
-
-    @PreUpdate
-    protected void onUpdate() {
-        updatedAt = LocalDateTime.now();
-    }
+    @Column(name = "role")
+    @Enumerated(EnumType.STRING)
+    private EmployeeRole role;
 }

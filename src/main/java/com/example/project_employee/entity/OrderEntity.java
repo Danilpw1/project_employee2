@@ -1,12 +1,11 @@
 package com.example.project_employee.entity;
 
+import com.example.project_employee.enums.OrderStatus;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.Builder;
-
-import java.math.BigDecimal;
+import org.hibernate.annotations.CreationTimestamp;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -16,62 +15,37 @@ import java.util.List;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
 public class OrderEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "created_at", nullable = false)
-    private LocalDateTime createdAt;
+    @CreationTimestamp
+    @Column(name = "created_date", updatable = false)
+    private LocalDateTime createdDate;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 20)
-    private OrderStatus status;
+    @Column(name = "status", nullable = false)
+    private OrderStatus orderStatus;
 
-    @Column(name = "total_amount", precision = 10, scale = 2)
-    private BigDecimal totalAmount;
+    @ManyToOne
+    @JoinColumn(name = "customer_id")
+    private CustomerEntity customer;
 
-    @Column(name = "total_items")
-    private Integer totalItems;
+    @ManyToMany
+    @JoinTable(name = "product_order",
+            joinColumns = @JoinColumn(name = "order_id"),
+            inverseJoinColumns = @JoinColumn(name = "product_id"))
+    private List<ProductEntity> products = new ArrayList<>();
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "client_id", nullable = false)
-    private ClientEntity client;
-
-    @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<OrderItemEntity> orderItems = new ArrayList<>();
-
-    @PrePersist
-    protected void onCreate() {
-        createdAt = LocalDateTime.now();
-        calculateTotals();
+    public void addProduct(ProductEntity product) {
+        products.add(product);
+        product.getOrders().add(this);
     }
 
-    @PreUpdate
-    protected void onUpdate() {
-        calculateTotals();
-    }
-
-    public void calculateTotals() {
-        if (orderItems != null && !orderItems.isEmpty()) {
-            totalAmount = orderItems.stream()
-                    .map(OrderItemEntity::getTotalPrice)
-                    .reduce(BigDecimal.ZERO, BigDecimal::add);
-            totalItems = orderItems.stream()
-                    .map(OrderItemEntity::getQuantity)
-                    .reduce(0, Integer::sum);
-        } else {
-            totalAmount = BigDecimal.ZERO;
-            totalItems = 0;
-        }
-    }
-
-    public enum OrderStatus {
-        NEW,
-        PROCESSING,
-        COMPLETED,
-        CANCELED
+    public void removeProduct(ProductEntity product) {
+        products.remove(product);
+        product.getOrders().remove(this);
     }
 }

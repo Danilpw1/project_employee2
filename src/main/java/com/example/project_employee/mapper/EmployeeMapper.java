@@ -3,23 +3,22 @@ package com.example.project_employee.mapper;
 import com.example.project_employee.dto.EmployeeRequestDto;
 import com.example.project_employee.dto.EmployeeResponseDto;
 import com.example.project_employee.entity.EmployeeEntity;
-import org.mapstruct.*;
+import org.mapstruct.Mapper;
 
-@Mapper(componentModel = "spring",
-        nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE,
-        unmappedTargetPolicy = ReportingPolicy.IGNORE)
+@Mapper(componentModel = "spring")
 public interface EmployeeMapper {
 
-    EmployeeResponseDto toResponseDto(EmployeeEntity employeeEntity);
+    EmployeeEntity toEntity(EmployeeRequestDto dto);
 
-    @Mapping(target = "id", ignore = true)
-    @Mapping(target = "createdAt", ignore = true)
-    @Mapping(target = "updatedAt", ignore = true)
-    EmployeeEntity toEntity(EmployeeRequestDto requestDto);
+    //    @Mapping(target = "info", source = ".",
+//            qualifiedByName = "getEmployeeInfo")
+    EmployeeResponseDto toResponseDto(EmployeeEntity entity);
 
-    @Mapping(target = "id", ignore = true)
-    @Mapping(target = "hireDate", ignore = true)
-    @Mapping(target = "createdAt", ignore = true)
-    @Mapping(target = "updatedAt", ignore = true)
-    void updateEntity(@MappingTarget EmployeeEntity employeeEntity, EmployeeRequestDto requestDto);
+//    @Named("getEmployeeInfo")
+//    default String getEmployeeInfo(EmployeeEntity entity) {
+//        return entity.getFirstName() + " " + entity.getLastName() +
+//                " ,email: " + entity.getEmail() +
+//                " ,password: " + entity.getPassword() +
+//                " ,role: " + entity.getRole();
+//    }
 }

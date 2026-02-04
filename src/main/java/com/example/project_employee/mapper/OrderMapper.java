@@ -1,65 +1,83 @@
 package com.example.project_employee.mapper;
 
-import com.example.project_employee.dto.*;
-import com.example.project_employee.entity.ClientEntity;
+import com.example.project_employee.dto.OrderRequestDto;
+import com.example.project_employee.dto.OrderResponseDto;
+import com.example.project_employee.dto.ProductResponseDto;
+import com.example.project_employee.entity.CustomerEntity;
 import com.example.project_employee.entity.OrderEntity;
-import com.example.project_employee.entity.OrderItemEntity;
 import com.example.project_employee.entity.ProductEntity;
-import org.mapstruct.*;
+import org.mapstruct.Mapper;
+import org.mapstruct.Mapping;
+import org.mapstruct.Named;
 
-import java.math.BigDecimal;
 import java.util.List;
 
-@Mapper(componentModel = "spring",
-        nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE,
-        unmappedTargetPolicy = ReportingPolicy.IGNORE)
+@Mapper(componentModel = "spring")
 public interface OrderMapper {
 
-    OrderResponseDto toResponseDto(OrderEntity orderEntity);
+    OrderEntity toEntity(OrderRequestDto dto);
 
-    OrderSimpleDto toSimpleDto(OrderEntity orderEntity);
+    //    @Mapping(target = "info", source = ".",
+//            qualifiedByName = "getOrderInfo")
+    @Mapping(target = "customerInfo", source = "customer",
+            qualifiedByName = "mapCustomerInfo")
+    @Mapping(target = "productInfo", source = "products",
+            qualifiedByName = "mapProductInfoList")
+    OrderResponseDto  toResponseDto(OrderEntity entity);
 
-    @Mapping(target = "id", ignore = true)
-    @Mapping(target = "createdAt", ignore = true)
-    @Mapping(target = "totalAmount", ignore = true)
-    @Mapping(target = "totalItems", ignore = true)
-    @Mapping(target = "client", ignore = true)
-    @Mapping(target = "orderItems", ignore = true)
-    OrderEntity toEntity(OrderRequestDto requestDto);
+//    @Named("getOrderInfo")
+//    default String getOrderInfo(OrderEntity entity) {
+//        Long customerId = entity.getCustomer() != null ? entity.getCustomer().getId() : null;
+//        return "Created date: " + entity.getCreatedDate() +
+//                " ,order status: " + entity.getOrderStatus() +
+//                " , Customer id: " + customerId;
+//    }
 
-    default OrderItemResponseDto toOrderItemResponseDto(OrderItemEntity orderItem) {
-        if (orderItem == null) {
+    @Named("mapCustomerInfo")
+    default OrderResponseDto.CustomerInfo mapCustomerInfo(CustomerEntity entity) {
+        if (entity == null) {
             return null;
         }
-
-        OrderItemResponseDto dto = new OrderItemResponseDto();
-        dto.setId(orderItem.getId());
-        dto.setQuantity(orderItem.getQuantity());
-        dto.setUnitPrice(orderItem.getUnitPrice());
-        dto.setTotalPrice(orderItem.getTotalPrice());
-
-        if (orderItem.getProduct() != null) {
-            ProductEntity product = orderItem.getProduct();
-            dto.setProduct(new ProductResponseDto(
-                    product.getId(),
-                    product.getName(),
-                    product.getDescription(),
-                    product.getPrice(),
-                    product.getCreatedAt(),
-                    product.getUpdatedAt()
-            ));
-        }
-
-        return dto;
+        OrderResponseDto.CustomerInfo info = new OrderResponseDto.CustomerInfo();
+        info.setFirstName(entity.getFirstName());
+        info.setLastName(entity.getLastName());
+        info.setEmail(entity.getEmail());
+        info.setPhoneNumber(entity.getPhoneNumber());
+        return info;
     }
 
-    default List<OrderItemResponseDto> toOrderItemResponseDtoList(List<OrderItemEntity> orderItems) {
-        if (orderItems == null) {
+    @Named("mapProductInfo")
+    default OrderResponseDto.ProductInfo mapProductInfo(ProductEntity entity) {
+        if (entity == null) {
             return null;
         }
+        OrderResponseDto.ProductInfo info = new OrderResponseDto.ProductInfo();
+        info.setId(entity.getId());
+        info.setName(entity.getName());
+        info.setDescription(entity.getDescription());
+        info.setPrice(entity.getPrice());
+        return info;
+    }
 
-        return orderItems.stream()
-                .map(this::toOrderItemResponseDto)
+    @Named("mapProductInfoList")
+    default List<OrderResponseDto.ProductInfo> mapProductInfoList(List<ProductEntity> entities) {
+        if (entities == null) {
+            return List.of();
+        }
+        return entities.stream()
+                .map(this::mapProductInfo)
+                .toList();
+    }
+
+    ProductResponseDto toProductResponseDto(ProductEntity entity);
+
+    default List<ProductResponseDto> toProductResponseDtoList(List<ProductEntity> entities) {
+        if (entities == null) {
+            return List.of();
+        }
+        return entities.stream()
+                .map(this::toProductResponseDto)
                 .toList();
     }
 }
+

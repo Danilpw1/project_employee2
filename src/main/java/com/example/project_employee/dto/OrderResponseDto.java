@@ -1,23 +1,33 @@
 package com.example.project_employee.dto;
 
-import com.example.project_employee.entity.OrderEntity;
-import lombok.AllArgsConstructor;
+import com.example.project_employee.enums.OrderStatus;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 
 @Data
-@NoArgsConstructor
-@AllArgsConstructor
 public class OrderResponseDto {
     private Long id;
-    private LocalDateTime createdAt;
-    private OrderEntity.OrderStatus status;
-    private BigDecimal totalAmount;
-    private Integer totalItems;
-    private ClientSimpleDto client;
-    private List<OrderItemResponseDto> orderItems;
+    private LocalDateTime createdDate;
+    private OrderStatus orderStatus;
+    private CustomerInfo customerInfo;
+    private List<ProductInfo> productInfo;
+
+    @Data
+    public static class CustomerInfo {
+        private String firstName;
+        private String lastName;
+        private String email;
+        private String phoneNumber;
+    }
+
+    @Data
+    public static class ProductInfo {
+        private Long id;
+        private String name;
+        private String description;
+        private BigDecimal price;
+    }
 }

@@ -2,272 +2,126 @@ package com.example.project_employee.service;
 
 import com.example.project_employee.dto.EmployeeRequestDto;
 import com.example.project_employee.dto.EmployeeResponseDto;
+import com.example.project_employee.dto.PageResponse;
 import com.example.project_employee.entity.EmployeeEntity;
+import com.example.project_employee.enums.EmployeeRole;
+import com.example.project_employee.exception.ResourceNotFoundException;
 import com.example.project_employee.mapper.EmployeeMapper;
 import com.example.project_employee.repository.EmployeeRepository;
+import com.example.project_employee.specification.EmployeeSpecification;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.http.HttpStatus;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.util.StringUtils;
-import org.springframework.web.server.ResponseStatusException;
 
-import java.math.BigDecimal;
-import java.time.LocalDate;
-import java.util.List;
-
-@Slf4j
 @Service
 @RequiredArgsConstructor
-@Transactional
+@Slf4j
 public class EmployeeService {
 
     private final EmployeeRepository employeeRepository;
-    private final EmployeeMapper employeeMapper;
+    private final EmployeeMapper mapper;
 
-    public EmployeeResponseDto createEmployee(EmployeeRequestDto requestDto) {
-        log.info("Создание нового сотрудника: {}", requestDto.getEmail());
-
-        if (employeeRepository.existsByEmail(requestDto.getEmail())) {
-            throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST,
-                    "Email '" + requestDto.getEmail() + "' уже используется"
-            );
-        }
-
-        if (employeeRepository.existsByPhone(requestDto.getPhone())) {
-            throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST,
-                    "Телефон '" + requestDto.getPhone() + "' уже используется"
-            );
-        }
-
-        EmployeeEntity employeeEntity = employeeMapper.toEntity(requestDto);
-        EmployeeEntity saved = employeeRepository.save(employeeEntity);
-        log.info("Создан сотрудник с ID: {}", saved.getId());
-
-        return employeeMapper.toResponseDto(saved);
+    public EmployeeResponseDto addEmployee(EmployeeRequestDto employeeRequestDto) {
+        log.debug("Начало создания сотрудника: {}", employeeRequestDto);
+        EmployeeEntity newEntity = mapper.toEntity(employeeRequestDto);
+        EmployeeEntity savedEntity = employeeRepository.save(newEntity);
+        log.info("Сотрудник успешно создан: ID={}, Имя={}", savedEntity.getId(),
+                savedEntity.getFirstName() + " " + savedEntity.getLastName());
+        return mapper.toResponseDto(savedEntity);
     }
 
-    @Transactional(readOnly = true)
-    public EmployeeResponseDto getEmployeeById(Long id) {
-        log.info("Получение сотрудника по ID: {}", id);
-
-        EmployeeEntity employeeEntity = employeeRepository.findById(id)
-                .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.NOT_FOUND,
-                        "Сотрудник с ID " + id + " не найден"
-                ));
-
-        return employeeMapper.toResponseDto(employeeEntity);
-    }
-
-    public EmployeeResponseDto updateEmployee(Long id, EmployeeRequestDto requestDto) {
-        log.info("Обновление сотрудника с ID: {}", id);
-
-        EmployeeEntity employeeEntity = employeeRepository.findById(id)
-                .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.NOT_FOUND,
-                        "Сотрудник с ID " + id + " не найден"
-                ));
-
-        if (!employeeEntity.getEmail().equals(requestDto.getEmail()) &&
-                employeeRepository.existsByEmailAndIdNot(requestDto.getEmail(), id)) {
-            throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST,
-                    "Email '" + requestDto.getEmail() + "' уже используется другим сотрудником"
-            );
-        }
-
-        if (!employeeEntity.getPhone().equals(requestDto.getPhone()) &&
-                employeeRepository.existsByPhoneAndIdNot(requestDto.getPhone(), id)) {
-            throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST,
-                    "Телефон '" + requestDto.getPhone() + "' уже используется другим сотрудником"
-            );
-        }
-
-        employeeMapper.updateEntity(employeeEntity, requestDto);
-        EmployeeEntity updated = employeeRepository.save(employeeEntity);
-        log.info("Обновлен сотрудник с ID: {}", updated.getId());
-
-        return employeeMapper.toResponseDto(updated);
-    }
-
-    public void deleteEmployee(Long id) {
-        log.info("Удаление сотрудника с ID: {}", id);
-
-        if (!employeeRepository.existsById(id)) {
-            throw new ResponseStatusException(
-                    HttpStatus.NOT_FOUND,
-                    "Сотрудник с ID " + id + " не найден"
-            );
-        }
-
-        employeeRepository.deleteById(id);
-        log.info("Удален сотрудник с ID: {}", id);
-    }
-
-    @Transactional(readOnly = true)
-    public Page<EmployeeResponseDto> getAllEmployees(Pageable pageable) {
-        log.info("Получение всех сотрудников с пагинацией: page={}, size={}",
-                pageable.getPageNumber(), pageable.getPageSize());
-
-        return employeeRepository.findAll(pageable)
-                .map(employeeMapper::toResponseDto);
-    }
-
-    @Transactional(readOnly = true)
-    public List<EmployeeResponseDto> getAllEmployees() {
-        log.info("Получение всех сотрудников без пагинации");
-
-        return employeeRepository.findAll().stream()
-                .map(employeeMapper::toResponseDto)
-                .toList();
-    }
-
-    @Transactional(readOnly = true)
-    public Page<EmployeeResponseDto> getEmployeesWithFilters(
+    public PageResponse<EmployeeResponseDto> getEmployees(
             String firstName,
             String lastName,
-            String department,
-            String position,
-            BigDecimal minSalary,
-            BigDecimal maxSalary,
-            LocalDate hireDateFrom,
-            LocalDate hireDateTo,
-            Pageable pageable) {
-
-        log.info("Фильтрация сотрудников с параметрами: firstName={}, lastName={}, department={}, position={}",
-                firstName, lastName, department, position);
-
-        Page<EmployeeEntity> employeeEntities = employeeRepository.findByAllFilters(
-                firstName,
-                lastName,
-                department,
-                position,
-                minSalary,
-                maxSalary,
-                hireDateFrom,
-                hireDateTo,
-                pageable
-        );
-
-        return employeeEntities.map(employeeMapper::toResponseDto);
+            EmployeeRole role,
+            String emailLike,
+            Pageable pageable
+    ) {
+        Specification<EmployeeEntity> specs = EmployeeSpecification.filter(firstName, lastName, emailLike, role);
+        log.debug("Поиск сотрудников по фильтрам: firstName={}, lastName={}, emailLike={}, page={}",
+                firstName, lastName, emailLike, pageable.getPageNumber());
+        Page<EmployeeEntity> pageEntity = employeeRepository.findAll(specs, pageable);
+        Page<EmployeeResponseDto> dtoPage = pageEntity.map(mapper::toResponseDto);
+        return toPageResponse(dtoPage);
     }
 
-    @Transactional(readOnly = true)
-    public List<EmployeeResponseDto> getEmployeesByDepartment(String department) {
-        log.info("Поиск сотрудников по отделу: {}", department);
-
-        if (!StringUtils.hasText(department)) {
-            throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST,
-                    "Отдел не указан"
-            );
-        }
-
-        return employeeRepository.findByDepartment(department).stream()
-                .map(employeeMapper::toResponseDto)
-                .toList();
+    private <T> PageResponse<T> toPageResponse(Page<T> page) {
+        var response = new PageResponse<T>();
+        response.setContent(page.getContent());
+        response.setPageNumber(page.getNumber());
+        response.setPageSize(page.getSize());
+        response.setTotalElements(page.getTotalElements());
+        response.setTotalPages(page.getTotalPages());
+        response.setFirst(page.isFirst());
+        response.setLast(page.isLast());
+        return response;
     }
 
-    @Transactional(readOnly = true)
-    public List<EmployeeResponseDto> getEmployeesByPosition(String position) {
-        log.info("Поиск сотрудников по должности: {}", position);
-
-        if (!StringUtils.hasText(position)) {
-            throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST,
-                    "Должность не указана"
-            );
-        }
-
-        return employeeRepository.findByPosition(position).stream()
-                .map(employeeMapper::toResponseDto)
-                .toList();
+    public EmployeeResponseDto getEmployeeById(Long id) {
+        EmployeeEntity entity = employeeRepository.findById(id).
+                orElseThrow(() -> {
+                    log.warn("Сотрудник с ID: {} не найден", id);
+                    return new ResourceNotFoundException("Сотрудник с id: " + id + " не найден");
+                });
+        return mapper.toResponseDto(entity);
     }
 
-    @Transactional(readOnly = true)
-    public List<EmployeeResponseDto> getEmployeesBySalaryRange(BigDecimal minSalary, BigDecimal maxSalary) {
-        log.info("Поиск сотрудников по диапазону зарплат: {} - {}", minSalary, maxSalary);
-
-        if (minSalary == null || maxSalary == null) {
-            throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST,
-                    "Минимальная и максимальная зарплата должны быть указаны"
-            );
-        }
-
-        if (minSalary.compareTo(maxSalary) > 0) {
-            throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST,
-                    "Минимальная зарплата не может быть больше максимальной"
-            );
-        }
-
-        return employeeRepository.findBySalaryBetween(minSalary, maxSalary).stream()
-                .map(employeeMapper::toResponseDto)
-                .toList();
+    public Long removeEmployee(Long id) {
+        EmployeeEntity employeeEntity = employeeRepository.findById(id).
+                orElseThrow(() -> {
+                    log.warn("Сотрудник с ID: {} не найден", id);
+                    return new ResourceNotFoundException("Сотрудник с id: " + id + " не найден");
+                });
+        log.info("Удаление сотрудника с ID: {}", id);
+        employeeRepository.delete(employeeEntity);
+        log.info("Сотрудник с ID: {} успешно удален", id);
+        return employeeEntity.getId();
     }
 
-    @Transactional(readOnly = true)
-    public List<EmployeeResponseDto> getEmployeesByHireDateRange(LocalDate from, LocalDate to) {
-        log.info("Поиск сотрудников по дате приема: {} - {}", from, to);
+    public EmployeeResponseDto updateEmployee(Long id, EmployeeRequestDto dto) {
+        EmployeeEntity entity = employeeRepository.findById(id).
+                orElseThrow(() -> {
+                    log.warn("Клиент с ID: {} не найден", id);
+                    return new ResourceNotFoundException("Клиент с id: " + id + " не найден");
+                });
+        log.debug("Начало обновления данных сотрудника с ID: {}", id);
+        boolean updated = false;
 
-        if (from == null || to == null) {
-            throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST,
-                    "Даты начала и конца диапазона должны быть указаны"
-            );
+        if (dto.getFirstName() != null && !dto.getFirstName().equals(entity.getFirstName())) {
+            entity.setFirstName(dto.getFirstName());
+            log.debug("Обновлено имя: {}",  dto.getFirstName());
+            updated = true;
         }
-
-        if (from.isAfter(to)) {
-            throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST,
-                    "Дата начала не может быть позже даты окончания"
-            );
+        if (dto.getLastName() != null && !dto.getLastName().equals(entity.getLastName())) {
+            entity.setLastName(dto.getLastName());
+            log.debug("Обновлена фамилия: {}",  dto.getLastName());
+            updated = true;
         }
-
-        return employeeRepository.findByHireDateBetween(from, to).stream()
-                .map(employeeMapper::toResponseDto)
-                .toList();
-    }
-
-    @Transactional(readOnly = true)
-    public List<EmployeeResponseDto> searchEmployeesByName(String name) {
-        log.info("Поиск сотрудников по имени: {}", name);
-
-        if (!StringUtils.hasText(name)) {
-            throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST,
-                    "Имя для поиска не указано"
-            );
+        if (dto.getEmail() != null && !dto.getEmail().equals(entity.getEmail())) {
+            entity.setEmail(dto.getEmail());
+            log.debug("Обновлена почта: {}",  dto.getEmail());
+            updated = true;
         }
-
-        return employeeRepository.findByNameContaining(name).stream()
-                .map(employeeMapper::toResponseDto)
-                .toList();
-    }
-
-    @Transactional(readOnly = true)
-    public boolean existsByEmail(String email) {
-        return employeeRepository.existsByEmail(email);
-    }
-
-    @Transactional(readOnly = true)
-    public EmployeeResponseDto getEmployeeByEmail(String email) {
-        log.info("Поиск сотрудника по email: {}", email);
-
-        EmployeeEntity employeeEntity = employeeRepository.findByEmail(email)
-                .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.NOT_FOUND,
-                        "Сотрудник с email '" + email + "' не найден"
-                ));
-
-        return employeeMapper.toResponseDto(employeeEntity);
+        if (dto.getPassword() != null && !dto.getPassword().isEmpty() &&
+                !dto.getPassword().equals(entity.getPassword())) {
+            entity.setPassword(dto.getPassword());
+            log.debug("Обновлен пароль: {}",  dto.getPassword());
+            updated = true;
+        }
+        if (dto.getRole() != null && !dto.getRole().equals(entity.getRole())) {
+            entity.setRole(dto.getRole());
+            log.debug("Обновлена должность: {}",  dto.getRole());
+            updated = true;
+        }
+        if (!updated) {
+            log.info("Ни одно поле не было изменено для сотрудника с ID: {}", id);
+            return mapper.toResponseDto(entity);
+        }
+        EmployeeEntity updatedEntity = employeeRepository.save(entity);
+        log.info("Данные сотрудника с ID: {} успешно обновлены", id);
+        return mapper.toResponseDto(updatedEntity);
     }
 }

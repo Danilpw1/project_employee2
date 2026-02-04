@@ -1,18 +1,17 @@
 package com.example.project_employee.dto;
 
-import com.example.project_employee.enums.EmployeeRole;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
 
 @Data
-@Schema(description = "DTO для создания или обновления сотрудника")
-public class EmployeeRequestDto {
+@Schema(description = "DTO для создания или обновления клиента")
+public class CustomerRequestDto {
 
     @Schema(
-            description = "Имя сотрудника",
+            description = "Имя клиента",
             example = "Иван",
             requiredMode = Schema.RequiredMode.REQUIRED
     )
@@ -21,7 +20,7 @@ public class EmployeeRequestDto {
     private String firstName;
 
     @Schema(
-            description = "Фамилия сотрудника",
+            description = "Фамилия клиента",
             example = "Иванов",
             requiredMode = Schema.RequiredMode.REQUIRED
     )
@@ -30,7 +29,7 @@ public class EmployeeRequestDto {
     private String lastName;
 
     @Schema(
-            description = "Почта сотрудника",
+            description = "Email клиента",
             example = "ivan@example.com",
             requiredMode = Schema.RequiredMode.REQUIRED
     )
@@ -38,21 +37,15 @@ public class EmployeeRequestDto {
     @Size(min = 8, max = 64, message = "Длина почты должна быть от 8 до 64 символов")
     private String email;
 
-
     @Schema(
-            description = "Пароль сотрудника",
-            example = "Qwerty123!",
+            description = "Номер телефона (с кодом страны)",
+            example = "+7 999 123-45-67",
             requiredMode = Schema.RequiredMode.REQUIRED
     )
-    @NotBlank(message = "Пароль не должен быть пустым")
-    @Size(min = 8, message = "Длина пароля должная быть минимум 8 символов")
-    private String password;
-
-    @Schema(
-            description = "Должность сотрудника",
-            example = "ADMIN",
-            requiredMode = Schema.RequiredMode.REQUIRED
+    @NotBlank(message = "Номер телефона не должен быть пустым")
+    @Pattern(
+            regexp = "^\\+?[0-9\\s\\-()]{7,20}$",
+            message = "Номер телефона должен содержать 7-20 цифр. Разрешены пробелы, дефисы или скобки"
     )
-    @NotNull(message = "Должность сотрудника должна быть ADMIN или MANAGER")
-    private EmployeeRole role;
+    private String phoneNumber;
 }

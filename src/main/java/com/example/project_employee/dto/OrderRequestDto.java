@@ -1,19 +1,23 @@
 package com.example.project_employee.dto;
 
-import com.example.project_employee.entity.OrderEntity;
+import com.example.project_employee.enums.OrderStatus;
+import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotNull;
-import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.NoArgsConstructor;
+
 
 @Data
-@NoArgsConstructor
-@AllArgsConstructor
+@Schema(description = "DTO для создания или обновления заказа")
 public class OrderRequestDto {
 
-    @NotNull(message = "Статус заказа обязателен")
-    private OrderEntity.OrderStatus status;
+    @Schema(
+            description = "Статус заказа",
+            example = "Новый",
+            allowableValues = "Новый, В обработке, Завершен или Отменен",
+            requiredMode = Schema.RequiredMode.REQUIRED
+    )
+    @NotNull(message = "Статус заказа не должен быть пустым")
+    private OrderStatus orderStatus;
 
-    @NotNull(message = "ID клиента обязательно")
-    private Long clientId;
+    private Long customerId;
 }

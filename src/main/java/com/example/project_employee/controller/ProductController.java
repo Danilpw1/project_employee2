@@ -29,9 +29,9 @@ public class ProductController {
     @PostMapping("/products")
     @Operation(summary = "Создать товар", description = "Позволяет создать товар")
     public ResponseEntity<ProductResponseDto> addProduct(@Valid @RequestBody ProductRequestDto requestDto) {
-        log.info("Получен запрос на создание товара: {}", requestDto.getName());
+
         ProductResponseDto responseDto = productService.addProduct(requestDto);
-        log.info("Товар с ID: {} успешно создан", responseDto.getId());
+
         return new ResponseEntity<>(responseDto, HttpStatus.CREATED);
     }
 
@@ -44,7 +44,7 @@ public class ProductController {
             @PageableDefault(page = 0, size = 10, sort = {"name", "price"}, direction = Sort.Direction.ASC)
             Pageable pageable
     ) {
-        log.info("Получение всех товаров");
+
         PageResponse<ProductResponseDto> responseDto = productService.getAllProducts(
                 name, description, price, pageable
         );
@@ -54,26 +54,26 @@ public class ProductController {
     @GetMapping("/products/{id}")
     @Operation(summary = "Получить товар по его id", description = "Возвращает информацию о товаре по его id")
     public ResponseEntity<ProductResponseDto> getProductById(@PathVariable("id") Long id) {
-        log.info("Получение товара по ID: {}", id);
+
         return new ResponseEntity<>(productService.getProductById(id), HttpStatus.OK);
     }
 
     @DeleteMapping("/products/{id}")
     @Operation(summary = "Удалить товар по его id", description = "Удаляет товар по его id")
     public ResponseEntity<Long> removeProduct(@PathVariable("id") long id) {
-        log.warn("Запрос на удаление товара с ID: {}", id);
+
         Long removedProduct = productService.removeProductById(id);
-        log.info("Товар с ID: {} успешно удален", id);
+
         return ResponseEntity.ok(removedProduct);
     }
 
     @PatchMapping("/products/{id}")
-    @Operation(summary = "Обновить товар по его id", description = "Обновляет информацию о товарое по его id")
+    @Operation(summary = "Обновить товар по его id", description = "Обновляет информацию о товаре по его id")
     public ResponseEntity<ProductResponseDto> updateProduct(@PathVariable("id") Long id,
                                                             @Valid @RequestBody ProductRequestDto requestDto) {
-        log.warn("Запрос на изменение данных товара с ID: {}", id);
+
         ProductResponseDto responseDto = productService.updateProduct(id, requestDto);
-        log.info("Данные товара с ID: {} успешно изменены", id);
+
         return new ResponseEntity<>(responseDto, HttpStatus.OK);
     }
 }

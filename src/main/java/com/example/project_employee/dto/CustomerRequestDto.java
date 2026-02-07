@@ -12,7 +12,7 @@ public class CustomerRequestDto {
 
     @Schema(
             description = "Имя клиента",
-            example = "Иван",
+            example = "Данил",
             requiredMode = Schema.RequiredMode.REQUIRED
     )
     @NotBlank(message = "Имя не должно быть пустым")
@@ -30,16 +30,16 @@ public class CustomerRequestDto {
 
     @Schema(
             description = "Email клиента",
-            example = "ivan@example.com",
+            example = "ivanov@example.com",
             requiredMode = Schema.RequiredMode.REQUIRED
     )
     @NotBlank(message = "Почта не должна быть пустой")
-    @Size(min = 8, max = 64, message = "Длина почты должна быть от 8 до 64 символов")
+    @Size(min = 10, max = 70, message = "Длина почты должна быть от 10 до 70 символов")
     private String email;
 
     @Schema(
             description = "Номер телефона (с кодом страны)",
-            example = "+7 999 123-45-67",
+            example = "+7 999 860 45 45",
             requiredMode = Schema.RequiredMode.REQUIRED
     )
     @NotBlank(message = "Номер телефона не должен быть пустым")

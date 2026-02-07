@@ -35,13 +35,4 @@ public class CustomerEntity {
             cascade = {CascadeType.PERSIST, CascadeType.MERGE})
     private List<OrderEntity> orders = new ArrayList<>();
 
-//    public void addOrder(OrderEntity order) {
-//        orders.add(order);
-//        order.setCustomer(this);
-//    }
-//
-//    public void removeOrder(OrderEntity order) {
-//        orders.remove(order);
-//        order.setCustomer(null);
-//    }
 }

@@ -28,10 +28,9 @@ public class CustomerController {
     @PostMapping("/customers")
     @Operation(summary = "Добавить клиента", description = "Позволяет добавить нового клиента")
     public ResponseEntity<CustomerResponseDto> addCustomer(@Valid @RequestBody CustomerRequestDto customerRequestDto) {
-        log.info("Получен запрос на создание клиента: {} {}", customerRequestDto.getFirstName(),
-                customerRequestDto.getLastName());
+
         CustomerResponseDto responseDto = customerService.addCustomer(customerRequestDto);
-        log.info("Клиент с ID: {} успешно создан", responseDto.getId());
+
         return new ResponseEntity<>(responseDto, HttpStatus.CREATED);
     }
 
@@ -45,7 +44,7 @@ public class CustomerController {
             @PageableDefault(page = 0, size = 10, sort = "firstName", direction = Sort.Direction.ASC)
             Pageable pageable
     ) {
-        log.info("Получение всех клиентов");
+
         PageResponse<CustomerResponseDto> response = customerService.getAllCustomers(
                 firstName, lastName, emailLike, phoneNumber, pageable
         );
@@ -55,7 +54,7 @@ public class CustomerController {
     @GetMapping("/customers/{id}")
     @Operation(summary = "Показать клиента по его ID", description = "Возвращает информацию о клиенте по его ID")
     public ResponseEntity<CustomerResponseDto> getCustomerById(@PathVariable("id") Long id) {
-        log.info("Получение клиента по ID: {}", id);
+
         return new ResponseEntity<>(customerService.getCustomerById(id), HttpStatus.OK);
     }
 
@@ -63,9 +62,9 @@ public class CustomerController {
     @Operation(summary = "Удалить клиента по его ID",
             description = "Позволяет удалить клиента по его ID")
     public ResponseEntity<Long> removeCustomer(@PathVariable("id") Long id) {
-        log.warn("Запрос на удаление клиента с ID: {}", id);
+
         long removedCustomer = customerService.removeCustomer(id);
-        log.info("Сотрудник с ID {} успешно удален", id);
+
         return ResponseEntity.ok(removedCustomer);
     }
 
@@ -74,9 +73,9 @@ public class CustomerController {
             description = "Позволяет удалить клиента по его ID")
     public ResponseEntity<CustomerResponseDto> updateCustomer(@PathVariable("id") Long id,
                                                               @Valid @RequestBody CustomerRequestDto requestDto) {
-        log.warn("Запрос на изменение данных клиента с ID: {}", id);
+
         CustomerResponseDto updatedCustomerEntity = customerService.updateCustomer(id, requestDto);
-        log.info("Данные клиента с ID: {} успешно изменены", id);
+
         return new ResponseEntity<>(updatedCustomerEntity, HttpStatus.OK);
     }
 }

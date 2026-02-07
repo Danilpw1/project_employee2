@@ -10,15 +10,6 @@ public interface EmployeeMapper {
 
     EmployeeEntity toEntity(EmployeeRequestDto dto);
 
-    //    @Mapping(target = "info", source = ".",
-//            qualifiedByName = "getEmployeeInfo")
     EmployeeResponseDto toResponseDto(EmployeeEntity entity);
 
-//    @Named("getEmployeeInfo")
-//    default String getEmployeeInfo(EmployeeEntity entity) {
-//        return entity.getFirstName() + " " + entity.getLastName() +
-//                " ,email: " + entity.getEmail() +
-//                " ,password: " + entity.getPassword() +
-//                " ,role: " + entity.getRole();
-//    }
 }

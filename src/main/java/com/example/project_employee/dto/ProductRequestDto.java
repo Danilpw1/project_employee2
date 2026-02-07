@@ -14,7 +14,7 @@ public class ProductRequestDto {
 
     @Schema(
             description = "Название товара",
-            example = "Печенье Oreo",
+            example = "Телевизор",
             requiredMode = Schema.RequiredMode.REQUIRED
     )
     @NotBlank(message = "Название не должно быть пустым")
@@ -23,7 +23,7 @@ public class ProductRequestDto {
 
     @Schema(
             description = "Описание товара",
-            example = "Хрустящее, сладкое и вкусное печенье, которое идеально сочетается с молоком",
+            example = "Большой, Жк , дорогой",
             requiredMode = Schema.RequiredMode.REQUIRED
     )
     @NotBlank(message = "Описание не должно быть пустым")
